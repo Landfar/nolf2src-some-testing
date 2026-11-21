@@ -36,7 +36,7 @@
 # Save/), no logs, no player profiles but the shipped default one,
 # autoexec.cfg as the shipped one (autoexec.cfg.retail), none of what the
 # launcher and the game write as they run (launchcmds.txt, display.cfg,
-# BanList.txt) nor the per-machine state linux-run.sh creates; the public
+# BanList.txt; windows-coop.bat's second game's coop2.cfg, coop2-display.cfg) nor the per-machine state linux-run.sh creates; the public
 # one has them too when their shipped copies ship with it (assets/game/),
 # else its install scripts write them. nolf2cmds.txt, the engine's command file as the build
 # writes it (build/nolf2cmds.sh), is in the private archive (for
@@ -68,6 +68,7 @@ bash "$HERE/nolf2cmds.sh" > "$PARENT/$STAGE/nolf2cmds.txt"
 EXCLUDE=(--exclude="$NAME/Save/*" --exclude="$NAME/Profiles/*" --exclude="$NAME/autoexec.cfg"
          --exclude="$NAME/nolf2cmds.txt" --exclude="$NAME/display.cfg" --exclude="$NAME/BanList.txt"
          --exclude='*.log' --exclude=run-cmds.txt
+         --exclude="$NAME/coop2.cfg" --exclude="$NAME/coop2-display.cfg"
          --exclude=launchcmds.txt --exclude=cd --exclude='*.part')
 
 rm -f "$PARENT/$NAME.tar" "$PARENT/$NAME.tar.gz"

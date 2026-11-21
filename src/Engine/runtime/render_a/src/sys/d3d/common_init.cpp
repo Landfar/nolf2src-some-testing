@@ -18,6 +18,10 @@
 
 // Shadow texture map related includes...
 #include "..\shadows\d3dshadowtexture.h"
+#ifdef NOLF2SRC_MODERN
+// MODERN.md M-E73: the monitor the window is on (src/modern/localcoop/)
+#include "../modern/localcoop/monitor.h"
+#endif
 
 
 RMode* g_pModeList;
@@ -238,14 +242,32 @@ int d3d_Init(RenderStructInit *pInit)
 	// engine took (r_ModernDesktopSize): under Wine the desktop window
 	// spans every monitor, and a borderless window over all of them would
 	// stretch the picture across them.
+	// M-E73: a window goes on the monitor WindowMonitor names (the primary
+	// one unless it is set), which is then the desktop it is laid out on.
+	// M-G93: the controller player's window of local co-op (LocalCoop 2)
+	// never takes the focus, clicked or shown: the focus, the keyboard and
+	// the mouse stay the other player's game's.
 	if (g_bRunWindowed || d3d_IsNullRenderOn())
 	{
 		screenRect.left		= 0;
 		screenRect.top		= 0;
 		screenRect.right	= GetSystemMetrics(SM_CXSCREEN);
 		screenRect.bottom	= GetSystemMetrics(SM_CYSCREEN);
+		HLTPARAM hMonitor = g_pStruct->GetParameter("WindowMonitor");
+		ModernMonitorRect(hMonitor ? (int)g_pStruct->GetParameterValueFloat(hMonitor) : 0, &screenRect);
 		int nDesktopW = screenRect.right - screenRect.left;
 		int nDesktopH = screenRect.bottom - screenRect.top;
+
+		HLTPARAM hLocalCoop = g_pStruct->GetParameter("LocalCoop");
+		bool bNoActivate = hLocalCoop && g_pStruct->GetParameterValueFloat(hLocalCoop) == 2.0f;
+		UINT nNoActivate = 0;
+		if (bNoActivate)
+		{
+			// WS_EX_NOACTIVATE (VC6's headers have it for WINVER 0x0500
+			// only); WS_EX_APPWINDOW keeps it on the taskbar
+			SetWindowLong(g_hWnd, GWL_EXSTYLE, GetWindowLong(g_hWnd, GWL_EXSTYLE) | 0x08000000L | WS_EX_APPWINDOW);
+			nNoActivate = SWP_NOACTIVATE;
+		}
 
 		HLTPARAM hWindowMode = g_pStruct->GetParameter("WindowMode");
 		int nWindowMode = hWindowMode ? (int)g_pStruct->GetParameterValueFloat(hWindowMode) : 0;
@@ -256,31 +278,31 @@ int d3d_Init(RenderStructInit *pInit)
 		{
 			SetWindowLong(g_hWnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
 			SetWindowPos(g_hWnd, HWND_NOTOPMOST, screenRect.left, screenRect.top, nDesktopW, nDesktopH,
-				SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+				SWP_FRAMECHANGED | SWP_SHOWWINDOW | nNoActivate);
 		}
 		else
 		{
 			DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
 			SetWindowLong(g_hWnd, GWL_STYLE, dwStyle);
 
-			wndRect.left	= (nDesktopW - (int)pInit->m_Mode.m_Width) / 2;
-			wndRect.top		= (nDesktopH - (int)pInit->m_Mode.m_Height) / 2;
+			wndRect.left	= screenRect.left + (nDesktopW - (int)pInit->m_Mode.m_Width) / 2;
+			wndRect.top		= screenRect.top + (nDesktopH - (int)pInit->m_Mode.m_Height) / 2;
 			wndRect.right	= wndRect.left + pInit->m_Mode.m_Width;
 			wndRect.bottom	= wndRect.top + pInit->m_Mode.m_Height;
 			AdjustWindowRect(&wndRect, dwStyle, false);
-			if (wndRect.left < 0)
+			if (wndRect.left < screenRect.left)
 			{
-				wndRect.right	-= wndRect.left;
-				wndRect.left	= 0;
+				wndRect.right	+= screenRect.left - wndRect.left;
+				wndRect.left	= screenRect.left;
 			}
-			if (wndRect.top < 0)
+			if (wndRect.top < screenRect.top)
 			{
-				wndRect.bottom	-= wndRect.top;
-				wndRect.top		= 0;
+				wndRect.bottom	+= screenRect.top - wndRect.top;
+				wndRect.top		= screenRect.top;
 			}
 
 			SetWindowPos(g_hWnd, HWND_NOTOPMOST, wndRect.left, wndRect.top, wndRect.right-wndRect.left,
-				wndRect.bottom-wndRect.top, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+				wndRect.bottom-wndRect.top, SWP_FRAMECHANGED | SWP_SHOWWINDOW | nNoActivate);
 		}
 	}
 	else

@@ -445,6 +445,9 @@ void r_InitRenderStruct(bool bFullClear)
 }
 
 #ifdef NOLF2SRC_MODERN
+// MODERN.md M-E73: the monitor the window is on (src/modern/localcoop/)
+#include "../modern/localcoop/monitor.h"
+
 // MODERN.md M-E30: the window mode. Windowed 0 is full screen; with
 // Windowed 1, WindowMode 2 is a borderless window over the whole desktop,
 // 1 a framed window, and 0 (unset: a config from before the setting) a
@@ -456,10 +459,26 @@ static bool r_ModernParamIs(char *pName, float fValue)
 	return hParam && r_GetParameterValueFloat(hParam) == fValue;
 }
 
+static float r_ModernParam(char *pName)
+{
+	HLTPARAM hParam = r_GetParameter(pName);
+	return hParam ? r_GetParameterValueFloat(hParam) : 0.0f;
+}
+
 // The desktop's own resolution: the registry's mode, not the screen's,
 // which in full screen is the game's.
+// MODERN.md M-E73: in a window on another monitor than the primary one
+// (WindowMonitor), that monitor's size.
 static void r_ModernDesktopSize(uint32 *pWidth, uint32 *pHeight)
 {
+	RECT rcMonitor;
+	if (r_ModernParamIs("windowed", 1.0f) && ModernMonitorRect((int)r_ModernParam("WindowMonitor"), &rcMonitor))
+	{
+		*pWidth = rcMonitor.right - rcMonitor.left;
+		*pHeight = rcMonitor.bottom - rcMonitor.top;
+		return;
+	}
+
 	DEVMODE dm;
 	memset(&dm, 0, sizeof(dm));
 	dm.dmSize = sizeof(dm);
@@ -507,7 +526,14 @@ LTRESULT r_InitRender(RMode *pMode)
 
 
 	hWnd = (HWND)dsi_GetMainWindow();
+#ifdef NOLF2SRC_MODERN
+	// MODERN.md M-G93: the controller player's window of local co-op
+	// (LocalCoop 2) is shown without taking the focus from the other
+	// player's game
+	ShowWindow(hWnd, (r_ModernParam("LocalCoop") == 2.0f) ? SW_SHOWNOACTIVATE : SW_RESTORE);
+#else
 	ShowWindow(hWnd, SW_RESTORE);
+#endif
 
 	if (g_bFirstTimeInit) 
 		r_InitSysCache(&g_SysCache);
@@ -572,7 +598,13 @@ LTRESULT r_InitRender(RMode *pMode)
 	}
 
 	// Set focus and capture the mouse.  We leave things like resizing the window to the render DLL.
+#ifdef NOLF2SRC_MODERN
+	// MODERN.md M-G93: not the controller player's window of local co-op
+	if (r_ModernParam("LocalCoop") != 2.0f)
+		SetFocus(hWnd);
+#else
 	SetFocus(hWnd);
+#endif
 
 	// Bind any open textures.
 	g_pClientMgr->BindSharedTextures();

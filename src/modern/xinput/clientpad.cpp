@@ -11,7 +11,10 @@
 //           The pad is read once a frame (Pad_Update), while the game's
 //           window is the foreground one, through padread.h -- the reader
 //           the engine's ##gamepad device uses, so the test pad
-//           (NOLF2SRC_PADTEST) drives both.
+//           (NOLF2SRC_PADTEST) drives both.  Local co-op on one PC
+//           (M-G93, LocalCoop): the keyboard-and-mouse player's game (1)
+//           never reads it, the controller player's (2) whether or not it
+//           has the foreground (its window never takes it).
 //
 //           Look (M-G47): the right stick past a radial dead zone
 //           (PadLookDeadZone), the rest of its travel rescaled to 0..1 and
@@ -75,6 +78,7 @@ namespace
 	VarTrack	s_vtLookDeadZone;
 	VarTrack	s_vtMoveDeadZone;
 	VarTrack	s_vtInvertY;
+	VarTrack	s_vtLocalCoop;
 	bool		s_bVarsInitted;
 
 	const float	c_fYawRate		= 3.14159265f;			// 180 degrees a second
@@ -141,6 +145,7 @@ namespace
 		s_vtLookDeadZone.Init(g_pLTClient, "PadLookDeadZone", LTNULL, 0.15f);
 		s_vtMoveDeadZone.Init(g_pLTClient, "PadMoveDeadZone", LTNULL, 0.2f);
 		s_vtInvertY.Init(g_pLTClient, "PadInvertY", LTNULL, 0.0f);
+		s_vtLocalCoop.Init(g_pLTClient, "LocalCoop", LTNULL, 0.0f);
 		s_bVarsInitted = true;
 	}
 
@@ -333,7 +338,10 @@ void Pad_Update(float fFrameTime)
 
 	s_fFrameTime = fFrameTime;
 
-	s_bPad = PadRead_Available() && GetForegroundWindow() == g_hMainWnd && PadRead_State(&s_Pad);
+	int nLocalCoop = (int)s_vtLocalCoop.GetFloat(0.0f);
+
+	s_bPad = nLocalCoop != 1 && PadRead_Available() &&
+		(nLocalCoop == 2 || GetForegroundWindow() == g_hMainWnd) && PadRead_State(&s_Pad);
 
 	if (!s_bPad)
 		memset(&s_Pad, 0, sizeof(s_Pad));

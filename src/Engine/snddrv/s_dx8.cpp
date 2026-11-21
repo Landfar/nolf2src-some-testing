@@ -2098,6 +2098,29 @@ bool CDx8SoundSys::SetSampleNotify( CSample* pSample, bool bEnable )
 
 #define TIME_DELAY			10
 #define TIME_RESOLUTION		0
+#ifdef NOLF2SRC_MODERN
+
+// MODERN.md M-E74: the engine's window of this process. FindWindow takes the
+// first "LithTech" window of any process, so with two games running (local
+// co-op on one PC, M-G93) one game's sound could be the other's window's:
+// heard, or silenced, as the other window gains and loses the focus.
+static BOOL CALLBACK ModernFindOwnWindow( HWND hWnd, LPARAM lParam )
+{
+	char szClass[16];
+	DWORD dwProcess = 0;
+
+	GetWindowThreadProcessId( hWnd, &dwProcess );
+	if( dwProcess != GetCurrentProcessId( ) )
+		return TRUE;
+
+	if( !GetClassName( hWnd, szClass, sizeof( szClass ) ) || lstrcmp( szClass, "LithTech" ) != 0 )
+		return TRUE;
+
+	*( HWND* )lParam = hWnd;
+	return FALSE;
+}
+
+#endif
 
 bool CDx8SoundSys::Init( )
 {
@@ -2121,7 +2144,12 @@ bool CDx8SoundSys::Init( )
 	m_pcLastError = LastError( );
 	DS_CHECK
 
+#ifdef NOLF2SRC_MODERN
+	HWND hWnd = NULL;
+	EnumWindows( ModernFindOwnWindow, ( LPARAM )&hWnd );
+#else
 	HWND hWnd = FindWindow("LithTech", NULL);
+#endif
 	if(hWnd)
 		m_hResult = m_pDirectSound->SetCooperativeLevel( hWnd, DSSCL_PRIORITY );
 	else

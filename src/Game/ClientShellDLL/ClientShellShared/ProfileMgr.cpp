@@ -1578,6 +1578,21 @@ LTBOOL CProfileMgr::Init()
 		unsigned int nBufSize = sizeof(szProfileName);
 		pRegMgr->Get("ProfileName", szProfileName, nBufSize, "");
 	}
+#ifdef NOLF2SRC_MODERN
+	// MODERN.md M-G93: the controller player's game of local co-op has a
+	// profile of its own, so its own player name, bindings and settings:
+	// CoopProfile ("Player 2" unless set), made if there is none; the
+	// profile last used, in the registry, is the other player's and stays
+	// as it is
+	if (GetConsoleInt("LocalCoop",0) == 2)
+	{
+		const char* pszCoopProfile = GetConsoleTempString("CoopProfile","");
+		if (!pszCoopProfile || !pszCoopProfile[0])
+			pszCoopProfile = "Player 2";
+		SAFE_STRCPY(szProfileName, pszCoopProfile);
+		SAFE_STRCPY(szDefProfileName, pszCoopProfile);
+	}
+#endif
 
 	//are we supposed to set a particular performance level?
 	char *pszPerf = GetConsoleTempString("SetPerformanceLevel","");
@@ -1725,6 +1740,11 @@ void CProfileMgr::NewProfile(const std::string& profileName)
 
 	m_profile.Save();
 	
+#ifdef NOLF2SRC_MODERN
+	// MODERN.md M-G93: not the controller player's game of local co-op
+	if (GetConsoleInt("LocalCoop",0) == 2)
+		return;
+#endif
 
 	CRegMgr* pRegMgr = g_pVersionMgr->GetRegMgr();
 	if (pRegMgr->IsValid())
@@ -1797,7 +1817,14 @@ void CProfileMgr::RenameProfile(const std::string& oldName,const std::string& ne
 		m_profile.Init(newName,LTFALSE);
 
 		CRegMgr* pRegMgr = g_pVersionMgr->GetRegMgr();
+#ifdef NOLF2SRC_MODERN
+		// MODERN.md M-G93: not the controller player's game of local co-op
+		if (GetConsoleInt("LocalCoop",0) == 2)
+			pRegMgr = LTNULL;
+		if (pRegMgr && pRegMgr->IsValid())
+#else
 		if (pRegMgr->IsValid())
+#endif
 		{
 			pRegMgr->Set("ProfileName", m_profile.m_sName.c_str());
 		}

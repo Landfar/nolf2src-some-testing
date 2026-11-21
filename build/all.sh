@@ -166,6 +166,12 @@ chmod +x "$OUT/linux-run.sh"
 # linux-server.sh: a dedicated server, NOLF2Srv.exe, with the host's Wine
 # (headless under xvfb-run; usage in its header)
 cp build/game-scripts/linux-server.sh "$OUT/" && chmod +x "$OUT/linux-server.sh"
+# windows-coop.bat: local co-op on one PC, two games (docs/MODERN.md M-G93;
+# usage in its header), modern builds only; CRLF, as cmd.exe reads it
+case "${NOLF2SRC_CFLAGS:-}" in
+    *NOLF2SRC_MODERN*) sed 's/$/\r/' build/game-scripts/windows-coop.bat > "$OUT/windows-coop.bat" ;;
+    *) rm -f "$OUT/windows-coop.bat" ;;
+esac
 
 if [ "${NOLF2_MIDDLEWARE:-retail}" = open ]; then
     step "2. open runtime: our Bink player on FFmpeg (build/ext.sh); the Microsoft runtime from $RETAIL"

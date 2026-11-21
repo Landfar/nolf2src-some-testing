@@ -1498,6 +1498,16 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 		LTCommandVar *pHold = g_pInputConsoleState ? cc_FindConsoleVar( g_pInputConsoleState, "PadHoldButtons" ) : LTNULL;
 		PadDevice_SetHold( pHold ? (WORD)(int)pHold->floatVal : 0 );
 	}
+
+	// MODERN.md M-G93: local co-op on one PC (LocalCoop): the keyboard-and-
+	// mouse player's game (1) reads no controller, the controller player's
+	// (2) only the controller, without the foreground
+	int nModernLocalCoop;
+	{
+		LTCommandVar *pCoop = g_pInputConsoleState ? cc_FindConsoleVar( g_pInputConsoleState, "LocalCoop" ) : LTNULL;
+		nModernLocalCoop = pCoop ? (int)pCoop->floatVal : 0;
+		PadDevice_SetBackground( nModernLocalCoop == 2 );
+	}
 #endif
 
 	// clear all of the axis console variables 
@@ -1521,6 +1531,13 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 			// Check for JoystickDisable..
 			if(LOBYTE(pDevice->m_DeviceType) == DI8DEVTYPE_JOYSTICK && g_CV_JoystickDisable)
 				break;
+#ifdef NOLF2SRC_MODERN
+			// MODERN.md M-G93: each local co-op player's own devices
+			if(nModernLocalCoop == 1 && pDevice->IsGamepad())
+				break;
+			if(nModernLocalCoop == 2 && !pDevice->IsGamepad())
+				break;
+#endif
 
 			// Poll the device if necessary
 			if(pDevice->IsJoystick() || pDevice->IsGamepad())

@@ -182,8 +182,20 @@ static bool cl_ModernWindowed()
     return hParam && r_GetParameterValueFloat(hParam) == 1.0f;
 }
 
+// MODERN.md M-G93: local co-op on one PC (LocalCoop, a console variable;
+// 0 unless set): 1 the keyboard-and-mouse player's game, 2 the controller
+// player's. Both play on in the background.
+static int cl_ModernLocalCoop()
+{
+    HLTPARAM hParam = r_GetParameter("LocalCoop");
+    return hParam ? (int)r_GetParameterValueFloat(hParam) : 0;
+}
+
 static bool cl_ModernRunInBackground()
 {
+    if (cl_ModernLocalCoop() != 0)
+        return true;
+
     HLTPARAM hParam = r_GetParameter("RunInBackground");
     return hParam && r_GetParameterValueFloat(hParam) != 0.0f;
 }
@@ -423,6 +435,16 @@ static LRESULT WINAPI MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
                         if (ilt_cursor != NULL)
                             ilt_cursor->RefreshCursor();
+                    }
+                    else if (!g_ClientGlob.m_bLostFocus && cl_ModernLocalCoop() == 2)
+                    {
+                        // M-G93: the controller player's game reads its
+                        // pad and plays on without the focus, which is
+                        // the other player's: it stays active (input,
+                        // frame time, objects) and leaves the cursor,
+                        // the other game's, alone
+                        g_ClientGlob.m_bLostFocus = LTTRUE;
+                        g_pClientMgr->ClearInput();
                     }
                     else if (!g_ClientGlob.m_bLostFocus)
                     {
@@ -726,7 +748,14 @@ int RunClientApp(HINSTANCE hInstance) {
             }
 
             // Center the mouse in the window.
+#ifdef NOLF2SRC_MODERN
+            // MODERN.md M-G93: never the controller player's game of local
+            // co-op, whose window does not take the focus: the cursor is
+            // the other game's
+            if (g_CV_CursorCenter && !g_ClientGlob.m_bLostFocus && cl_ModernLocalCoop() != 2) {
+#else
             if (g_CV_CursorCenter && !g_ClientGlob.m_bLostFocus) {
+#endif
                 GetWindowRect(pGlob->m_hMainWnd, &wndRect);
                 // [BL 2/2/2000] - center the cursor in the SCREEN, not the window -- otherwise it breaks
                 // when you play in a small window on a big screen

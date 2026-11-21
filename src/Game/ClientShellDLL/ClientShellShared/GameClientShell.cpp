@@ -1531,7 +1531,9 @@ void CGameClientShell::OnEvent(uint32 dwEventID, uint32 dwParam)
 #ifdef NOLF2SRC_MODERN
 			// MODERN.md M-G70: a window after full screen is not held to the
 			// full-screen mode's rectangle of the desktop
-			else
+			// M-G93: but the controller player's game of local co-op leaves
+			// the cursor alone: it is the other player's game's
+			else if (GetConsoleInt("LocalCoop",0) != 2)
 				ClipCursor(NULL);
 #endif
 
@@ -4585,6 +4587,30 @@ LRESULT CALLBACK HookedWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 				return(CallWindowProc(g_pfnMainWndProc,hWnd,uMsg,wParam,lParam));
 		}
 	}
+
+	// MODERN.md M-G93: the controller player's game of local co-op takes
+	// nothing from the mouse (its window, which never takes the focus, still
+	// gets the other player's clicks and moves over it) or the keyboard
+	switch(uMsg)
+	{
+		case WM_CHAR:
+		case WM_KEYDOWN:
+		case WM_KEYUP:
+		case WM_MOUSEMOVE:
+		case WM_LBUTTONUP:
+		case WM_LBUTTONDOWN:
+		case WM_LBUTTONDBLCLK:
+		case WM_RBUTTONUP:
+		case WM_RBUTTONDOWN:
+		case WM_RBUTTONDBLCLK:
+		case WM_MBUTTONUP:
+		case WM_MBUTTONDOWN:
+		case WM_MBUTTONDBLCLK:
+		case 0x020A:	// WM_MOUSEWHEEL
+			if (GetConsoleInt("LocalCoop",0) == 2)
+				return 0;
+			break;
+	}
 #endif
 	switch(uMsg)
 	{
@@ -4721,8 +4747,17 @@ BOOL SetWindowSize(uint32 nWidth, uint32 nHeight)
 		// (a framed window whose inside is the mode's size, or a borderless
 		// one over the desktop); retail resized it whole to the mode here,
 		// which cut the frame's width off the picture
-		ClipCursor(NULL);
-		ShowWindow(g_hMainWnd, SW_NORMAL);
+		// M-G93: the controller player's game of local co-op leaves the
+		// cursor and the focus to the other player's game
+		if (GetConsoleInt("LocalCoop",0) == 2)
+		{
+			ShowWindow(g_hMainWnd, SW_SHOWNOACTIVATE);
+		}
+		else
+		{
+			ClipCursor(NULL);
+			ShowWindow(g_hMainWnd, SW_NORMAL);
+		}
 #else
 		SetWindowPos(g_hMainWnd,HWND_NOTOPMOST,
 					((screenRect.right - screenRect.left) - nWidth) / 2,

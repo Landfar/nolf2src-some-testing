@@ -37,6 +37,10 @@
 //           engine set (c_dfDIJoystick2, or the engine's own: one DWORD per
 //           bound object).
 //
+//           In local co-op's controller player's game (MODERN.md M-G93,
+//           PadDevice_SetBackground) it is read without the foreground,
+//           which is the other player's game's.
+//
 //           The client can hold buttons back from the bindings
 //           (PadDevice_SetHold): while it reads them itself -- a dialogue
 //           decision's choice -- a button pressed then stays released for
@@ -57,6 +61,9 @@ namespace
 
 	// The buttons the client holds back from the bindings (XInput's bits).
 	WORD s_wPadDeviceHold;
+
+	// M-G93: read without the foreground (local co-op's controller player)
+	BOOL s_bPadDeviceBackground;
 
 	enum { PADOBJ_AXIS, PADOBJ_BUTTON };
 
@@ -378,7 +385,7 @@ namespace
 			if (!m_bFormat)
 				return DIERR_INVALIDPARAM;
 
-			if ((m_dwCoop & DISCL_FOREGROUND) && !PadIsForeground(m_hWnd))
+			if ((m_dwCoop & DISCL_FOREGROUND) && !s_bPadDeviceBackground && !PadIsForeground(m_hWnd))
 				return DIERR_OTHERAPPHASPRIO;
 
 			if (!m_bAcquired)
@@ -702,7 +709,7 @@ namespace
 			if (!m_bAcquired)
 				return FALSE;
 
-			if ((m_dwCoop & DISCL_FOREGROUND) && !PadIsForeground(m_hWnd))
+			if ((m_dwCoop & DISCL_FOREGROUND) && !s_bPadDeviceBackground && !PadIsForeground(m_hWnd))
 			{
 				m_bAcquired = FALSE;
 				m_bLost     = TRUE;
@@ -799,6 +806,12 @@ namespace
 	void PadDevice_SetHold(WORD wButtons)
 	{
 		s_wPadDeviceHold = wButtons;
+	}
+
+	// M-G93: read the pad whether or not the game has the foreground
+	void PadDevice_SetBackground(BOOL bBackground)
+	{
+		s_bPadDeviceBackground = bBackground;
 	}
 }
 

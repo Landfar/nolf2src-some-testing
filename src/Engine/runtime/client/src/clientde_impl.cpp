@@ -1717,8 +1717,17 @@ LTRESULT ci_ReadConfigFile(const char *pFilename)
 }
 
 
+#ifdef NOLF2SRC_MODERN
+// MODERN.md M-E75: autoexec.cfg and display.cfg are the files the engine
+// was started with (-config, -display; clientmgr.cpp)
+const char *cm_ModernConfigFileName(const char *pFilename);
+
+#endif
 LTRESULT ci_WriteConfigFile(const char *pFilename)
 {
+#ifdef NOLF2SRC_MODERN
+	pFilename = cm_ModernConfigFileName(pFilename);
+#endif
 	if (cc_SaveConfigFile(&g_ClientConsoleState, pFilename))
 		return LT_OK;
 	else
@@ -1727,6 +1736,9 @@ LTRESULT ci_WriteConfigFile(const char *pFilename)
 
 LTRESULT ci_WriteConfigFileFields(const char *pFilename, uint32 nNumValues, const char** pValues)
 {
+#ifdef NOLF2SRC_MODERN
+	pFilename = cm_ModernConfigFileName(pFilename);	// M-E75
+#endif
 	if (cc_SaveConfigFileFields(&g_ClientConsoleState, pFilename, nNumValues, pValues))
 		return LT_OK;
 	else

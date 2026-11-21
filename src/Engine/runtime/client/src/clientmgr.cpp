@@ -98,6 +98,30 @@ define_holder(ILTFontManager, font_manager);
 #include "icommandlineargs.h"
 static ICommandLineArgs *command_line_args;
 define_holder(ICommandLineArgs, command_line_args);
+#ifdef NOLF2SRC_MODERN
+
+// MODERN.md M-E75: the configuration files the engine was started with.
+// The engine reads -config <file> in place of autoexec.cfg and -display
+// <file> in place of display.cfg, but wrote autoexec.cfg at exit, and the
+// game writes display.cfg, whatever the files read were: two games started
+// from one folder with files of their own (local co-op on one PC, M-G93)
+// wrote each other's. Names the client writes, autoexec.cfg or
+// display.cfg, become the -config or -display file given.
+const char *cm_ModernConfigFileName(const char *pFilename)
+{
+	const char *pArg = LTNULL;
+
+	if (!pFilename)
+		return pFilename;
+
+	if (stricmp(pFilename, "autoexec.cfg") == 0)
+		pArg = command_line_args->FindArgDash("config");
+	else if (stricmp(pFilename, "display.cfg") == 0)
+		pArg = command_line_args->FindArgDash("display");
+
+	return (pArg && pArg[0]) ? pArg : pFilename;
+}
+#endif
 
 
 #ifdef DE_LOCAL_SERVERBIND
@@ -1530,7 +1554,11 @@ void CClientMgr::Term()
         RemoveObjectsInList(&m_ObjectMgr.m_ObjectLists[i], false);
     }
 
+#ifdef NOLF2SRC_MODERN
+    SaveAutoConfig(cm_ModernConfigFileName("autoexec.cfg"));	// M-E75
+#else
     SaveAutoConfig("autoexec.cfg");
+#endif
 
     // Stop getting input.
     m_InputMgr->Term(m_InputMgr);
