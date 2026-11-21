@@ -759,7 +759,18 @@ int RunClientApp(HINSTANCE hInstance) {
                 GetWindowRect(pGlob->m_hMainWnd, &wndRect);
                 // [BL 2/2/2000] - center the cursor in the SCREEN, not the window -- otherwise it breaks
                 // when you play in a small window on a big screen
+#ifdef NOLF2SRC_MODERN
+                // MODERN.md M-G93: the keyboard-and-mouse player's game of
+                // local co-op keeps the cursor in its own window, on
+                // whichever monitor: the primary screen's centre can be the
+                // other player's window
+                if (cl_ModernLocalCoop() == 1)
+                    SetCursorPos((wndRect.left + wndRect.right) / 2, (wndRect.top + wndRect.bottom) / 2);
+                else
+                    SetCursorPos((screenRect.right - screenRect.left) / 2, (screenRect.bottom - screenRect.top) / 2);
+#else
                 SetCursorPos((screenRect.right - screenRect.left) / 2, (screenRect.bottom - screenRect.top) / 2);
+#endif
             }
             
             while (PeekMessage(&msg, LTNULL, 0, 0, PM_REMOVE)) {

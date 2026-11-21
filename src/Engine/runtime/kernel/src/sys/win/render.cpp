@@ -676,7 +676,13 @@ LTRESULT r_TermRender(int surfaceHandling, bool bUnLoadDLL)
 		g_Render.Term(bUnLoadDLL);
 		
 		// Un-clip the cursor.
+#ifdef NOLF2SRC_MODERN
+		// MODERN.md M-G93: not the controller player's game of local co-op:
+		// the cursor is the other game's
+		if (g_CV_CursorCenter && r_ModernParam("LocalCoop") != 2.0f) 
+#else
 		if (g_CV_CursorCenter) 
+#endif
 		{
 			ClipCursor(LTNULL); 
 		}
