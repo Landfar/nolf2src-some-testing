@@ -26,9 +26,11 @@ set P2_MONITOR=-1
 rem Player 2's install of the game, if not this one (a full path)
 set P2_DIR=
 
-set P2_ARGS=+LocalCoop 2 +Windowed 1 +WindowMode 2 +WindowMonitor %P2_MONITOR%
+rem Both games go straight to the main menu, without the intro movies
+rem (NoMovies; for this start only)
+set P2_ARGS=+LocalCoop 2 +NoMovies 1 +Windowed 1 +WindowMode 2 +WindowMonitor %P2_MONITOR%
 
-start "" "%~dp0NOLF2.exe" +LocalCoop 1
+start "" "%~dp0NOLF2.exe" +LocalCoop 1 +NoMovies 1
 
 rem NOLF2.exe writes the engine's command line to launchcmds.txt in its
 rem folder: the first game reads it before the second writes it
