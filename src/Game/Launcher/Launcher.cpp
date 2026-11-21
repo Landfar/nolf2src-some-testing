@@ -153,7 +153,17 @@ BOOL CLauncherApp::InitInstance()
 	GetModuleFileName(NULL, sPath, 125);
 	_splitpath(sPath, NULL, NULL, sName, sExt);
 	sprintf(sExe, "%s%s", sName, sExt);
+#ifdef NOLF2SRC_MODERN
+	// MODERN.md M-G93: local co-op on one PC starts a second game while the
+	// first one runs (and its NOLF2.exe waits for it, M-L9): with LocalCoop
+	// on the command line neither check stops it
+	CString csModernCmdLine = m_lpCmdLine ? m_lpCmdLine : "";
+	csModernCmdLine.MakeLower();
+	BOOL bModernLocalCoop = csModernCmdLine.Find("localcoop") >= 0;
+	if(!bModernLocalCoop && ExistProcess(sExe, 2))
+#else
 	if(ExistProcess(sExe, 2))
+#endif
 	{
 		return FALSE;
 	}
@@ -171,7 +181,11 @@ BOOL CLauncherApp::InitInstance()
 	sprintf(sExe, "%sLITHTECH.EXE", sDir);
 #endif
 
+#ifdef NOLF2SRC_MODERN
+	if(!bModernLocalCoop && ExistProcess(sExe, 1))
+#else
 	if(ExistProcess(sExe, 1))
+#endif
 	{
 		return FALSE;
 	}
